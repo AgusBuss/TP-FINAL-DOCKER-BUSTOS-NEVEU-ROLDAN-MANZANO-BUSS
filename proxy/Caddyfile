@@ -1,0 +1,15 @@
+{
+	auto_https off
+}
+
+http://app.lab.test {
+	reverse_proxy app:8000
+}
+
+http://db.lab.test {
+	reverse_proxy pgadmin:80
+}
+
+http://n8n.lab.test {
+	reverse_proxy n8n:5678
+}

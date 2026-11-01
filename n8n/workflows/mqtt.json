@@ -1,0 +1,234 @@
+{
+  "name": "MQTT - Registrar lectura",
+  "nodes": [
+    {
+      "parameters": {
+        "topics": "lab/g1/req/lecturas.create",
+        "options": {
+          "jsonParseBody": true,
+          "onlyMessage": true
+        }
+      },
+      "type": "n8n-nodes-base.mqttTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "957a8c89-e9c0-462e-83a6-389a3ef57b61",
+      "name": "MQTT Trigger",
+      "credentials": {
+        "mqtt": {
+          "id": "4ahTIKm0qQvhQrq0",
+          "name": "MQTT account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 4
+          },
+          "conditions": [
+            {
+              "id": "7efced30-e4dc-4704-836d-1aec0f32881b",
+              "leftValue": "={{ !!$json[0].correlation_id && typeof $json[0].reply_to === 'string' && $json[0].reply_to.startsWith('lab/g1/res/') && !!$json[0].data && !!$json[0].data.dispositivo && !!$json[0].data.tipo && typeof $json[0].data.valor === 'number' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.4,
+      "position": [
+        160,
+        16
+      ],
+      "id": "37c8965b-cfac-486c-917d-bfd3d4dde322",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "lecturas",
+          "mode": "list",
+          "cachedResultName": "lecturas"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "dispositivo": "={{ $('MQTT Trigger').item.json[0].data.dispositivo }}",
+            "tipo": "={{ $('MQTT Trigger').item.json[0].data.tipo }}",
+            "valor": "={{ $('MQTT Trigger').item.json[0].data.valor }}",
+            "origen": "mqtt"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "dispositivo",
+              "displayName": "dispositivo",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "tipo",
+              "displayName": "tipo",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "valor",
+              "displayName": "valor",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "origen",
+              "displayName": "origen",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "creado_en",
+              "displayName": "creado_en",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.8,
+      "position": [
+        384,
+        -80
+      ],
+      "id": "d18c2855-b83f-4e22-bd7d-74c394c88e63",
+      "name": "Insert rows in a table",
+      "credentials": {
+        "postgres": {
+          "id": "MwPSiiFnoOnJgzWV",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "topic": "={{ $('MQTT Trigger').item.json[0].reply_to }}",
+        "sendInputData": false,
+        "message": "={{ JSON.stringify({ ok: true, correlation_id: $('MQTT Trigger').item.json[0].correlation_id, result: { id: $json.id, status: \"created\" } }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mqtt",
+      "typeVersion": 1,
+      "position": [
+        608,
+        -80
+      ],
+      "id": "367baf0e-11af-4f2d-b616-28c60a98d632",
+      "name": "MQTT",
+      "credentials": {
+        "mqtt": {
+          "id": "4ahTIKm0qQvhQrq0",
+          "name": "MQTT account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "MQTT Trigger": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert rows in a table": {
+      "main": [
+        [
+          {
+            "node": "MQTT",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "d963f215-b784-46ed-8691-2aaa6abfcf31",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "90add0ee9acce7129ac04fbdbcf08f54569e2c70783e22a29122f20ee63c5b7f"
+  },
+  "nodeGroups": [],
+  "id": "fCgvQzAVDEGAmHxe",
+  "tags": []
+}
